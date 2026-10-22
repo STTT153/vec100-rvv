@@ -129,7 +129,7 @@ float ggml_table_f32_f16[1 << 16];
 /* ggml/src/ggml-cpu/vec.cpp:264-274 (scalar configuration) */
 static void ggml_vec_dot_f16_impl(int n, float *GGML_RESTRICT s, size_t bs,
                       ggml_fp16_t *GGML_RESTRICT x, size_t bx,
-                      ggml_fp16_t *GGML_RESTRICT y, size_t by, int nrc) {
+                      ggml_fp16_t *GGML_RESTRICT y, size_t by, int nrc, const float *table) {
     assert(nrc == 1);
     GGML_UNUSED(nrc);
     GGML_UNUSED(bx);
@@ -140,8 +140,7 @@ static void ggml_vec_dot_f16_impl(int n, float *GGML_RESTRICT s, size_t bs,
 
     /* ggml/src/ggml-cpu/vec.cpp:371-378 */
     for (int i = 0; i < n; ++i) {
-        sumf += (ggml_float)(GGML_CPU_FP16_TO_FP32(x[i]) *
-                             GGML_CPU_FP16_TO_FP32(y[i]));
+        sumf += (ggml_float)(table[x[i]] * table[y[i]]);
     }
 
     *s = sumf;
@@ -163,5 +162,11 @@ void ggml_vec_dot_f16_isolated(int n, float *s, size_t bs, ggml_fp16_t *x,
         return true;
     }();
     (void)initialized;
-    ggml_vec_dot_f16_impl(n, s, bs, x, bx, y, by, nrc);
+    ggml_vec_dot_f16_impl(n, s, bs, x, bx, y, by, nrc, ggml_table_f32_f16);
+}
+
+// Explicit-table entry for experiments; the original entry keeps its initialization contract.
+void ggml_vec_dot_f16_with_table(int n, float *s, ggml_fp16_t *x,
+                               ggml_fp16_t *y, const float *table) {
+    ggml_vec_dot_f16_impl(n, s, 0, x, 0, y, 0, 1, table);
 }

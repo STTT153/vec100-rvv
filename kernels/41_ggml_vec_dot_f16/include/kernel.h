@@ -126,4 +126,8 @@ extern "C" void ggml_vec_dot_f16_rvv(int n, float *GGML_RESTRICT s, size_t bs,
 void ggml_vec_dot_f16_isolated(int n, float *s, size_t bs, ggml_fp16_t *x,
                                size_t bx, ggml_fp16_t *y, size_t by, int nrc);
 
+// Explicit-table experiment entries (no lazy initialization).
+void ggml_vec_dot_f16_with_table(int, float *, ggml_fp16_t *, ggml_fp16_t *, const float *);
+void ggml_vec_dot_f16_with_table_rvv(int, float *, ggml_fp16_t *, ggml_fp16_t *, const float *);
+
 #endif // KERNELS_41_GGML_VEC_DOT_F16_INCLUDE_KERNEL_H_

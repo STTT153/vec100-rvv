@@ -3,27 +3,24 @@ set -euo pipefail
 
 BUILD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-CXX="/opt/LLVM-23.1.1-Linux-X64/bin/clang++"
-EXTRA_FLAGS=(
-    --target=riscv64-unknown-linux-gnu
-    --gcc-toolchain=/opt/riscv-gnu-toolchain-2026-08-27
-    --sysroot=/opt/riscv-gnu-toolchain-2026-08-27/sysroot
-
-    -march=rv64gcv
-    -mabi=lp64d
-    -O3
-    -std=c++17
-)
-
-# CXX="/opt/riscv-gnu-toolchain-2026-08-27/bin/riscv64-unknown-linux-gnu-g++"
-# EXTRA_FLAGS=(
-#    --sysroot=/opt/riscv-gnu-toolchain-2026-08-27/sysroot
-#
-#    -march=rv64gcv
-#    -mabi=lp64d
-#    -O3
-#    -std=c++17
-# )
+# Environment overrides preserve the locally selected toolchain by default.
+CXX="${CXX:-/opt/homebrew/opt/llvm/bin/clang++}"
+RISCV_TOOLCHAIN="${RISCV_TOOLCHAIN:-/Users/stevenyin/opt/toolchains/riscv-gnu-toolchain-2026-08-27/install}"
+RISCV_SYSROOT="${RISCV_SYSROOT:-${RISCV_TOOLCHAIN}/sysroot}"
+RISCV_TARGET="${RISCV_TARGET:-riscv64-unknown-linux-gnu}"
+RISCV_ARCH="${RISCV_ARCH:-rv64gcv}"
+RISCV_ABI="${RISCV_ABI:-lp64d}"
+EXTRA_FLAGS=()
+case "${CXX##*/}" in
+    *clang*) EXTRA_FLAGS+=("--target=${RISCV_TARGET}" "--gcc-toolchain=${RISCV_TOOLCHAIN}") ;;
+esac
+EXTRA_FLAGS+=("--sysroot=${RISCV_SYSROOT}" "-march=${RISCV_ARCH}" "-mabi=${RISCV_ABI}" -O3 -std=c++17)
+# Whitespace-separated extra flags (no shell evaluation). For arguments with
+# spaces, source this file and append to the EXTRA_FLAGS array directly.
+if [[ -n "${CXXFLAGS:-}" ]]; then
+    read -r -a USER_CXX_FLAGS <<< "$CXXFLAGS"
+    EXTRA_FLAGS+=("${USER_CXX_FLAGS[@]}")
+fi
 
 compile_kernel() {
     local assembly="" output_dir is_assembly=0

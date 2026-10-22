@@ -1,0 +1,7 @@
+#include "common.h"
+namespace gather {
+std::vector<std::string> entries(){return {"gradient"};}
+Input generate(const std::string &entry,uint64_t seed){Input in;in.entry=entry;in.params={{"width",8192},{"extend",1}};RNG r(seed);r.fill(in.add<uint32_t>("row","u32",8192,"input,output",true),8192);auto lut=in.add<uint32_t>("lut","u32",256,"gather");for(int i=0;i<256;++i){unsigned a=r.next()%256;lut[i]=(a<<24)|((r.next()%256*a/255)<<16)|((r.next()%256*a/255)<<8)|(r.next()%256*a/255);}auto f=in.add<float>("geometry","f32",9,"parameters");float values[]={0,0,0,0,1,0,1,1.0f/8192,0};std::memcpy(f,values,sizeof values);return in;}
+void validate(Input &in){auto n=in.p("width",0,10000000);in.p("extend",0,2);in.a<uint32_t>("row","u32",n);in.a<uint32_t>("lut","u32",256);auto f=in.a<float>("geometry","f32",9);for(int i=0;i<9;++i)require(__builtin_isfinite(f[i]),"geometry must be finite");roles(in,"row","input,output",true);roles(in,"lut","gather");roles(in,"geometry","parameters");}
+std::unique_ptr<Case> make_case(const Input &in,Platform &p,bool use_rvv){auto c=std::make_unique<Case>(in,p);auto row=c->work.ptr<hb_packed_t<uint32_t>>("row");auto lut=c->work.ptr<uint32_t>("lut");auto f=c->work.ptr<float>("geometry");unsigned n=in.params.at("width");auto ext=static_cast<hb_paint_extend_t>(in.params.at("extend"));auto fn=SELECT(hb_139_linear_gradient_region,hb_139_linear_gradient_region_rvv);float gx=f[0],gy=f[1],gx0=f[2],gy0=f[3],dx=f[4],dy=f[5],den=f[6],xx=f[7],yx=f[8];c->call=[=]{fn(row,0,n,gx,gy,gx0,gy0,dx,dy,den,xx,yx,lut,ext);};return c;}
+}

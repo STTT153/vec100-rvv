@@ -1,0 +1,7 @@
+#include "common.h"
+namespace gather {
+std::vector<std::string> entries(){return {"plus","template"};}
+Input generate(const std::string &entry,uint64_t seed){Input in;in.entry=entry;in.params={{"n",8192}};RNG r(seed);auto a=in.add<double>("source","f64",8192,"gather");auto i=in.add<uint32_t>("indices","u32",8192,"index");for(int j=0;j<8192;++j){a[j]=int(r.next()%2001)-1000;i[j]=r.next()%8192;}in.add<double>("output","f64",8192,"output",true);auto t=in.add<int64_t>("slices","i64",2,"index");t[0]=0;t[1]=8192;return in;}
+void validate(Input &in){auto n=in.p("n",0,10000000);finite_values(in.a<double>("source","f64",n),n);in.a<double>("output","f64",n);index_range(in.a<uint32_t>("indices","u32",n),n,n);auto t=in.a<int64_t>("slices","i64",2);require(t[0]==0&&t[1]==n,"single task slices must be [0,n]");roles(in,"source","gather");roles(in,"indices","index");roles(in,"slices","index");roles(in,"output","output",true);}
+std::unique_ptr<Case> make_case(const Input &in,Platform &p,bool use_rvv){auto c=std::make_unique<Case>(in,p);auto a=c->work.ptr<double>("source"),b=c->work.ptr<double>("output");auto i=c->work.ptr<uint32_t>("indices");auto t=c->work.ptr<int64_t>("slices");auto n=in.params.at("n");auto raw=c.get();if(in.entry=="plus"){auto fn=SELECT(GB_bld__plus_fp64,GB_bld__plus_fp64_rvv);c->call=[=]{raw->result=fn(b,nullptr,false,a,n,0,nullptr,false,i,true,0,t,nullptr,1);};}else{auto fn=SELECT(GB_bld_template,GB_bld_template_rvv);c->call=[=]{fn(a,b,i,i,nullptr,t,1);};}return c;}
+}

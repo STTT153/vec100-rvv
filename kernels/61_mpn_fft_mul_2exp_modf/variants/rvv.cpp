@@ -185,3 +185,11 @@ void mpn_fft_fft_rvv(mp_ptr *Ap, mp_size_t K, int **ll, mp_size_t omega,
     fft(Ap, K, ll, omega, n, inc, tp, tw.get(), offsets.get(),
         offsets.get() + capacity);
 }
+
+// Caller-owned workspace: allocate once outside the measured call.
+size_t mpn_fft_rvv_workspace_lanes() { return __riscv_vsetvlmax_e64m1(); }
+void mpn_fft_fft_workspace_rvv(mp_ptr *Ap, mp_size_t K, int **ll,
+        mp_size_t omega, mp_size_t n, mp_size_t inc, mp_ptr tp,
+        mp_ptr tw, uint64_t *aoff, uint64_t *boff) {
+    fft(Ap, K, ll, omega, n, inc, tp, tw, aoff, boff);
+}

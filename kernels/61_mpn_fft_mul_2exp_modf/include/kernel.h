@@ -329,4 +329,13 @@ mp_limb_t mpn_lshiftc(mp_ptr, mp_srcptr, mp_size_t, unsigned int);
 void mpn_fft_fft_isolated(mp_ptr *Ap, mp_size_t K, int **ll, mp_size_t omega,
                           mp_size_t n, mp_size_t inc, mp_ptr tp);
 
+#include <stddef.h>
+#include <stdint.h>
+
+// Caller-owned experiment workspace: tw has lanes*(n+1) limbs; each
+// offset buffer has lanes uint64_t entries. lanes is queried on the executing hart.
+size_t mpn_fft_rvv_workspace_lanes();
+void mpn_fft_fft_workspace_rvv(mp_ptr *, mp_size_t, int **, mp_size_t,
+        mp_size_t, mp_size_t, mp_ptr, mp_ptr, uint64_t *, uint64_t *);
+
 #endif // KERNELS_61_MPN_FFT_MUL_2EXP_MODF_INCLUDE_KERNEL_H_
